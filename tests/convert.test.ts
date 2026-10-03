@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { htmlToBlocks } from '@/lib/blocks';
 import { convertDocx } from '@/lib/convert';
@@ -61,6 +62,19 @@ describe('convertDocx (fixtures/sample.docx)', async () => {
 
   it('reports downgraded content', () => {
     expect(warnings).toEqual(['1 table flattened to text (X Articles has no tables)']);
+  });
+});
+
+describe('convertDocx input realm', () => {
+  // Firefox content scripts get the page's ArrayBuffer from File.arrayBuffer(),
+  // which fails JSZip's `instanceof ArrayBuffer` check unless copied.
+  it('accepts an ArrayBuffer created in another realm', async () => {
+    const bytes = new Uint8Array(fixture());
+    const foreign = runInNewContext('new ArrayBuffer(n)', { n: bytes.byteLength }) as ArrayBuffer;
+    new Uint8Array(foreign).set(bytes);
+    expect(foreign instanceof ArrayBuffer).toBe(false);
+    const { payload } = await convertDocx(foreign, 'sample.docx');
+    expect(payload.title).toBe('My Imported Article');
   });
 });
 

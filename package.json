@@ -2,7 +2,7 @@
   "name": "docx-to-x-articles",
   "description": "Drag a Word (.docx) file onto an X Articles draft to import its title, formatting and images.",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",

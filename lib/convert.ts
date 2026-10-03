@@ -19,7 +19,8 @@ export interface ConvertResult {
   warnings: string[];
 }
 
-export async function convertDocx(data: ArrayBuffer, fileName: string): Promise<ConvertResult> {
+export async function convertDocx(input: ArrayBuffer, fileName: string): Promise<ConvertResult> {
+  const data = ownRealmCopy(input);
   const images: ImportImage[] = [];
   const result = await mammoth.convertToHtml(
     { arrayBuffer: data },
@@ -47,6 +48,20 @@ export async function convertDocx(data: ArrayBuffer, fileName: string): Promise<
     },
     warnings,
   };
+}
+
+/**
+ * JSZip checks `instanceof ArrayBuffer`, which fails for buffers from another
+ * JS realm, e.g. File.arrayBuffer() in a Firefox content script returns the
+ * page's ArrayBuffer. Copying the bytes into one we allocate fixes that.
+ */
+function ownRealmCopy(input: ArrayBuffer): ArrayBuffer {
+  if (input instanceof ArrayBuffer) return input;
+  // TypeScript narrows `input` to never here; it doesn't model realms.
+  const bytes = new Uint8Array(input as ArrayBuffer);
+  const copy = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(copy).set(bytes);
+  return copy;
 }
 
 /** Reads dc:title from docProps/core.xml (File → Properties → Title in Word). */
